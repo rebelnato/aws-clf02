@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>AWS CLF-C02 Study Hub</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2710%27 fill=%27%23232f3e%27/%3E%3Cpath fill=%27%23ff9900%27 d=%27M47 35.5a9.5 9.5 0 0 0-9-9.4A12.5 12.5 0 0 0 14.5 31a7.5 7.5 0 0 0 1.8 14.8H45a7 7 0 0 0 2-10.3z%27/%3E%3C/svg%3E">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh;display:flex;flex-direction:column}
@@ -72,6 +73,17 @@ header h1{font-size:1.1rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
 #submit-btn:hover{background:#e08600}#submit-btn:disabled{background:#cbd5e0;cursor:not-allowed}
 #reset-btn{background:none;color:#e53e3e;border:2px solid #e53e3e;padding:10px 20px;font-size:.88rem;font-weight:700;border-radius:8px;cursor:pointer;transition:all .2s}
 #reset-btn:hover{background:#e53e3e;color:#fff}
+/* confirm modal */
+#confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center}
+#confirm-overlay.show{display:flex}
+#confirm-box{background:#fff;border-radius:14px;padding:28px 32px;max-width:360px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.2);text-align:center}
+#confirm-box h3{font-size:1.1rem;font-weight:700;color:#1a202c;margin-bottom:8px}
+#confirm-box p{font-size:.9rem;color:#718096;margin-bottom:22px;line-height:1.5}
+#confirm-box .btn-row{display:flex;gap:10px;justify-content:center}
+#confirm-cancel{padding:10px 24px;border:2px solid #e2e8f0;border-radius:8px;background:#fff;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .15s}
+#confirm-cancel:hover{border-color:#718096;color:#1a202c}
+#confirm-ok{padding:10px 24px;border:none;border-radius:8px;background:#e53e3e;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;transition:background .15s}
+#confirm-ok:hover{background:#c53030}
 #results-banner{display:none;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12);padding:32px;text-align:center;margin-bottom:28px}
 #results-banner h2{font-size:1.6rem;margin-bottom:8px}
 #score-display{font-size:3rem;font-weight:800;margin:16px 0 8px}
@@ -621,7 +633,13 @@ function retryExam(){
 }
 
 function resetExam(){
-  if(!confirm('Reset all answers? This cannot be undone.'))return;
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function closeConfirm(){
+  document.getElementById('confirm-overlay').classList.remove('show');
+}
+function doReset(){
+  closeConfirm();
   submitted=false;answered=0;currentPage=0;
   userAnswers=new Array(questions.length).fill(null);
   clearState();
@@ -693,5 +711,16 @@ if(submitted){
 }
 buildServices();
 </script>
+<!-- confirm modal -->
+<div id="confirm-overlay" onclick="if(event.target===this)closeConfirm()">
+  <div id="confirm-box">
+    <h3>Reset all answers?</h3>
+    <p>This will clear all your selected answers and progress. This cannot be undone.</p>
+    <div class="btn-row">
+      <button id="confirm-cancel" onclick="closeConfirm()">Cancel</button>
+      <button id="confirm-ok" onclick="doReset()">Yes, Reset</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
