@@ -425,9 +425,35 @@ function toggleNav(){const nav=document.getElementById('left-nav');nav.classList
 
 // ── PAGINATION ──
 const PAGE_SIZE=1;
+const LS_ANSWERS='clf_answers';
+const LS_PAGE='clf_page';
+const LS_SUBMITTED='clf_submitted';
+
+function saveState(){
+  try{
+    localStorage.setItem(LS_ANSWERS,JSON.stringify(userAnswers));
+    localStorage.setItem(LS_PAGE,currentPage);
+    localStorage.setItem(LS_SUBMITTED,submitted?'1':'0');
+  }catch(e){}
+}
+function loadState(){
+  try{
+    const a=localStorage.getItem(LS_ANSWERS);
+    if(a){const parsed=JSON.parse(a);if(Array.isArray(parsed)&&parsed.length===questions.length)userAnswers=parsed;}
+    const p=localStorage.getItem(LS_PAGE);
+    if(p!==null)currentPage=Math.min(parseInt(p),questions.length-1);
+    submitted=localStorage.getItem(LS_SUBMITTED)==='1';
+    answered=userAnswers.filter(a=>a!==null).length;
+  }catch(e){}
+}
+function clearState(){
+  try{localStorage.removeItem(LS_ANSWERS);localStorage.removeItem(LS_PAGE);localStorage.removeItem(LS_SUBMITTED);}catch(e){}
+}
+
 let currentPage=0;
 let answered=0,submitted=false;
 let userAnswers=new Array(questions.length).fill(null);
+loadState();
 
 function totalPages(){return Math.ceil(questions.length/PAGE_SIZE);}
 
@@ -453,6 +479,7 @@ function buildPageNav(){
 
 function goToPage(p){
   currentPage=p;
+  saveState();
   renderPage();
   document.getElementById('exam-container').scrollIntoView({behavior:'smooth'});
 }
@@ -514,6 +541,7 @@ function onAnswer(idx){
   }
   answered=userAnswers.filter(a=>a!==null).length;
   updateProgress();
+  saveState();
 }
 
 function updateProgress(){}
@@ -536,6 +564,7 @@ function submitExam(){
   });
   renderPage();
   showResults(correct,incorrect,skipped);
+  saveState();
 }
 
 function applyResultStyles(idx){
@@ -579,6 +608,7 @@ function showResults(c,inc,sk){
 function retryExam(){
   submitted=false;answered=0;currentPage=0;
   userAnswers=new Array(questions.length).fill(null);
+  clearState();
   document.getElementById('results-banner').style.display='none';
   document.getElementById('submit-btn').disabled=false;
   updateProgress();renderPage();
@@ -631,6 +661,20 @@ function filterServices(){
 
 // ── INIT ──
 renderPage();
+if(submitted){
+  // restore post-submit state
+  document.getElementById('submit-btn').disabled=true;
+  let correct=0,incorrect=0,skipped=0;
+  questions.forEach((_,idx)=>{
+    const ua=userAnswers[idx];const q=questions[idx];
+    if(ua===null){skipped++;return;}
+    let ok;
+    if(q.multi){const ans=Array.isArray(q.answer)?q.answer:[q.answer];ok=Array.isArray(ua)&&ua.length===ans.length&&ans.every(a=>ua.includes(a));}
+    else{ok=ua===q.answer;}
+    if(ok)correct++;else incorrect++;
+  });
+  showResults(correct,incorrect,skipped);
+}
 buildServices();
 </script>
 </body>
