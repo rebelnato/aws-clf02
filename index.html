@@ -68,8 +68,10 @@ header h1{font-size:1.1rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
 .badge{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-left:auto}
 .explanation{margin-top:14px;padding:12px 16px;background:#ebf8ff;border-left:4px solid #3182ce;border-radius:6px;font-size:.9rem;line-height:1.6;display:none}
 .explanation strong{color:#2b6cb0}
-#submit-btn{background:#ff9900;color:#fff;border:none;padding:12px 36px;font-size:1rem;font-weight:700;border-radius:8px;cursor:pointer;transition:background .2s}
+#submit-btn{background:#ff9900;color:#fff;border:none;padding:12px 28px;font-size:1rem;font-weight:700;border-radius:8px;cursor:pointer;transition:background .2s}
 #submit-btn:hover{background:#e08600}#submit-btn:disabled{background:#cbd5e0;cursor:not-allowed}
+#reset-btn{background:none;color:#e53e3e;border:2px solid #e53e3e;padding:10px 20px;font-size:.88rem;font-weight:700;border-radius:8px;cursor:pointer;transition:all .2s}
+#reset-btn:hover{background:#e53e3e;color:#fff}
 #results-banner{display:none;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12);padding:32px;text-align:center;margin-bottom:28px}
 #results-banner h2{font-size:1.6rem;margin-bottom:8px}
 #score-display{font-size:3rem;font-weight:800;margin:16px 0 8px}
@@ -163,7 +165,10 @@ header h1{font-size:1.1rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
       <div id="questions-wrapper"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
         <button class="pn-btn" onclick="changePage(-1)" id="btn-prev">← Prev</button>
-        <button id="submit-btn" onclick="submitExam()">Submit Exam</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="reset-btn" onclick="resetExam()">🔄 Reset</button>
+          <button id="submit-btn" onclick="submitExam()">Submit Exam</button>
+        </div>
         <button class="pn-btn" onclick="changePage(1)" id="btn-next">Next →</button>
       </div>
     </div>
@@ -606,6 +611,17 @@ function showResults(c,inc,sk){
 }
 
 function retryExam(){
+  submitted=false;answered=0;currentPage=0;
+  userAnswers=new Array(questions.length).fill(null);
+  clearState();
+  document.getElementById('results-banner').style.display='none';
+  document.getElementById('submit-btn').disabled=false;
+  updateProgress();renderPage();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function resetExam(){
+  if(!confirm('Reset all answers? This cannot be undone.'))return;
   submitted=false;answered=0;currentPage=0;
   userAnswers=new Array(questions.length).fill(null);
   clearState();
