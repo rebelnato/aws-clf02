@@ -5,17 +5,44 @@
 <title>AWS CLF-C02 Study Hub</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh}
-header{background:linear-gradient(135deg,#232f3e 0%,#ff9900 100%);color:#fff;padding:20px 32px;text-align:center}
-header h1{font-size:1.7rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.88;font-size:.9rem}
-.tab-bar{display:flex;background:#232f3e;padding:0 24px;position:sticky;top:0;z-index:200}
-.tab-btn{padding:14px 28px;background:none;border:none;color:rgba(255,255,255,.65);font-size:.95rem;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;transition:color .2s,border-color .2s}
-.tab-btn:hover{color:#fff}.tab-btn.active{color:#ff9900;border-bottom-color:#ff9900}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh;display:flex;flex-direction:column}
+header{background:linear-gradient(135deg,#232f3e 0%,#ff9900 100%);color:#fff;padding:10px 12px;text-align:center;flex-shrink:0}
+header h1{font-size:1.1rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.88;font-size:.9rem}
+/* ── LEFT NAV ── */
+#app-body{display:flex;flex:1;min-height:0}
+#left-nav{width:220px;flex-shrink:0;background:#232f3e;height:100vh;position:sticky;top:0;display:flex;flex-direction:column;z-index:100;transition:width .25s cubic-bezier(.4,0,.2,1);overflow:hidden}
+#left-nav.collapsed{width:54px}
+/* toggle row */
+#nav-toggle{display:flex;align-items:center;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.09);flex-shrink:0}
+#nav-toggle-btn{background:none;border:none;color:rgba(255,255,255,.55);cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s}
+#nav-toggle-btn:hover{color:#ff9900;background:rgba(255,255,255,.08)}
+#nav-toggle-btn svg{width:20px;height:20px}
+/* chevron flips on collapse */
+#left-nav .chev{display:inline-block;margin-left:auto;transition:transform .25s;font-style:normal;font-size:.8rem;color:rgba(255,255,255,.3)}
+#left-nav.collapsed .chev{transform:rotate(180deg)}
+/* nav items */
+#nav-items{padding:12px 0;flex:1;overflow:hidden}
+#left-nav .nav-label{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);padding:0 16px;margin:16px 0 6px;white-space:nowrap;transition:opacity .2s,max-height .2s}
+#left-nav.collapsed .nav-label{opacity:0;max-height:0;margin:0;overflow:hidden}
+#left-nav .nav-label:first-child{margin-top:4px}
+.side-btn{display:flex;align-items:center;width:100%;padding:11px 14px;background:none;border:none;color:rgba(255,255,255,.65);font-size:.9rem;font-weight:600;cursor:pointer;text-align:left;border-left:3px solid transparent;white-space:nowrap;transition:color .15s,background .15s,border-color .15s}
+.side-btn:hover{color:#fff;background:rgba(255,255,255,.07)}
+.side-btn.active{color:#ff9900;border-left-color:#ff9900;background:rgba(255,153,0,.07)}
+.side-btn .icon{font-size:1.1rem;width:24px;flex-shrink:0;text-align:center}
+.side-btn .label{transition:opacity .2s;white-space:nowrap}
+#left-nav.collapsed .side-btn .label{opacity:0}
+#left-nav.collapsed .side-btn .chev{opacity:0}
+/* tooltip when collapsed */
+#left-nav.collapsed .side-btn{position:relative}
+#left-nav.collapsed .side-btn::after{content:attr(data-tip);position:absolute;left:58px;top:50%;transform:translateY(-50%);background:#1a202c;color:#fff;font-size:.78rem;padding:5px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#left-nav.collapsed .side-btn:hover::after{opacity:1}
+/* ── MAIN CONTENT ── */
+#main-content{flex:1;min-width:0;overflow-y:auto}
 .tab-pane{display:none}.tab-pane.active{display:block}
-#exam-layout{display:flex;gap:20px;max-width:1100px;margin:28px auto;padding:0 16px 100px;align-items:flex-start}
+#exam-layout{display:flex;gap:20px;max-width:1100px;margin:28px auto;padding:0 16px 40px;align-items:flex-start}
 #exam-container{flex:1;min-width:0}
-#q-panel{width:200px;flex-shrink:0;position:sticky;top:70px}
-#q-panel-inner{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:14px;max-height:calc(100vh - 120px);overflow-y:auto}
+#q-panel{width:200px;flex-shrink:0;position:sticky;top:20px}
+#q-panel-inner{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:14px;max-height:calc(100vh - 180px);overflow-y:auto}
 #q-panel-inner h3{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
 .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
 .page-header h2{font-size:1rem;color:#718096;font-weight:600}
@@ -41,8 +68,6 @@ header h1{font-size:1.7rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
 .badge{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-left:auto}
 .explanation{margin-top:14px;padding:12px 16px;background:#ebf8ff;border-left:4px solid #3182ce;border-radius:6px;font-size:.9rem;line-height:1.6;display:none}
 .explanation strong{color:#2b6cb0}
-#submit-bar{position:sticky;bottom:0;background:#fff;border-top:1px solid #e2e8f0;padding:14px 32px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 -4px 16px rgba(0,0,0,.08);z-index:100}
-#progress-text{font-size:.9rem;color:#718096}
 #submit-btn{background:#ff9900;color:#fff;border:none;padding:12px 36px;font-size:1rem;font-weight:700;border-radius:8px;cursor:pointer;transition:background .2s}
 #submit-btn:hover{background:#e08600}#submit-btn:disabled{background:#cbd5e0;cursor:not-allowed}
 #results-banner{display:none;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12);padding:32px;text-align:center;margin-bottom:28px}
@@ -77,7 +102,23 @@ header h1{font-size:1.7rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
 .tip-box ul li{font-size:.88rem;color:#4a5568;line-height:1.5;padding-left:16px;position:relative}
 .tip-box ul li::before{content:"→";position:absolute;left:0;color:#dd6b20;font-weight:700}
 #no-results{display:none;text-align:center;padding:48px;color:#718096}
-@media(max-width:760px){#exam-layout{flex-direction:column}#q-panel{width:100%;position:static}#q-panel-inner{max-height:160px}.page-nav{grid-template-columns:repeat(6,1fr)}header h1{font-size:1.2rem}.tab-btn{padding:12px 14px;font-size:.82rem}.question-card{padding:18px 16px}#submit-bar{flex-direction:column;gap:10px}.svc-grid{grid-template-columns:1fr}}
+@media(max-width:760px){
+  #app-body{flex-direction:column}
+  #left-nav{width:100%!important;height:auto;min-height:0;flex-direction:row;flex-wrap:wrap;padding:0;position:relative}
+  #nav-toggle{display:none}
+  #nav-items{display:flex;flex-direction:row;flex-wrap:wrap;padding:4px 8px;flex:none}
+  #left-nav .nav-label{display:none}
+  .side-btn{width:auto;padding:9px 14px;border-left:none;border-bottom:3px solid transparent;justify-content:flex-start}
+  .side-btn .label{opacity:1!important;width:auto!important}
+  .side-btn.active{border-left:none;border-bottom-color:#ff9900}
+  #exam-layout{flex-direction:column}
+  #q-panel{width:100%;position:static}
+  #q-panel-inner{max-height:160px}
+  .page-nav{grid-template-columns:repeat(6,1fr)}
+  header h1{font-size:0.8rem}
+  .question-card{padding:18px 16px}
+  .svc-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -85,10 +126,25 @@ header h1{font-size:1.7rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
   <h1>AWS Certified Cloud Practitioner — Study Hub</h1>
   <p>CLF-C02 &nbsp;|&nbsp; Practice Exam &amp; Service Reference</p>
 </header>
-<div class="tab-bar">
-  <button class="tab-btn active" onclick="switchTab('exam',this)">📝 Practice Exam</button>
-  <button class="tab-btn" onclick="switchTab('services',this)">☁️ AWS Services</button>
-</div>
+<div id="app-body">
+<nav id="left-nav">
+  <div id="nav-toggle">
+    <button id="nav-toggle-btn" onclick="toggleNav()" title="Toggle sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div id="nav-items">
+    <button class="side-btn active" onclick="switchTab('exam',this)" data-tab="exam" data-tip="Practice Exam">
+      <span class="icon">📝</span><span class="label"> Practice Exam</span>
+    </button>
+    <button class="side-btn" onclick="switchTab('services',this)" data-tab="services" data-tip="AWS Services">
+      <span class="icon">☁️</span><span class="label"> AWS Services</span>
+    </button>
+  </div>
+</nav>
+<div id="main-content">
 <div id="tab-exam" class="tab-pane active">
   <div id="exam-layout">
     <div id="exam-container">
@@ -105,8 +161,9 @@ header h1{font-size:1.7rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
         <h2 id="page-label">Question 1 of 171</h2>
       </div>
       <div id="questions-wrapper"></div>
-      <div style="display:flex;justify-content:space-between;margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
         <button class="pn-btn" onclick="changePage(-1)" id="btn-prev">← Prev</button>
+        <button id="submit-btn" onclick="submitExam()">Submit Exam</button>
         <button class="pn-btn" onclick="changePage(1)" id="btn-next">Next →</button>
       </div>
     </div>
@@ -116,10 +173,6 @@ header h1{font-size:1.7rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
         <div class="page-nav" id="page-nav"></div>
       </div>
     </div>
-  </div>
-  <div id="submit-bar">
-    <span id="progress-text">0 of 198 answered</span>
-    <button id="submit-btn" onclick="submitExam()">Submit Exam</button>
   </div>
 </div>
 <div id="tab-services" class="tab-pane">
@@ -132,6 +185,8 @@ header h1{font-size:1.7rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
     <div id="no-results">No services match your search.</div>
   </div>
 </div>
+</div><!-- end #main-content -->
+</div><!-- end #app-body -->
 <script>
 const questions=[
   {q:"Which AWS infrastructure component is specifically designed to cache content globally closer to end-users to reduce latency?",options:["Availability Zones","Edge Locations","AWS Regions","Placement Groups"],answer:1,multi:false,explanation:"Edge locations are the individual data centers within AWS Points of Presence (PoPs) that store cached copies of your content to deliver it to nearby users with minimal delay."},
@@ -365,7 +420,8 @@ const examTips=[
 ];
 
 // ── TAB ──
-function switchTab(n,b){document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+n).classList.add('active');b.classList.add('active');document.getElementById('submit-bar').style.display=n==='exam'?'flex':'none';}
+function switchTab(n,b){document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.side-btn').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+n).classList.add('active');b.classList.add('active');}
+function toggleNav(){const nav=document.getElementById('left-nav');nav.classList.toggle('collapsed');}
 
 // ── PAGINATION ──
 const PAGE_SIZE=1;
@@ -460,7 +516,7 @@ function onAnswer(idx){
   updateProgress();
 }
 
-function updateProgress(){document.getElementById('progress-text').textContent=`${answered} of ${questions.length} answered`;}
+function updateProgress(){}
 
 function submitExam(){
   if(submitted)return;
