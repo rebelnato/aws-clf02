@@ -53,6 +53,8 @@ header h1{font-size:1.1rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
 .pn-btn.active{background:#ff9900;border-color:#ff9900;color:#fff}
 .pn-btn.answered{border-color:#68d391;background:#f0fff4;color:#276749}
 .pn-btn.active.answered{background:#ff9900;border-color:#ff9900;color:#fff}
+.pn-btn.submitted-page{border-color:#3182ce;background:#ebf8ff;color:#2b6cb0}
+.pn-btn.active.submitted-page{background:#ff9900;border-color:#ff9900;color:#fff}
 .question-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:24px 28px;margin-bottom:20px}
 .q-number{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#ff9900;margin-bottom:6px}
 .q-text{font-size:1rem;line-height:1.6;font-weight:600;margin-bottom:16px}
@@ -69,6 +71,7 @@ header h1{font-size:1.1rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
 .badge{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-left:auto}
 .explanation{margin-top:14px;padding:12px 16px;background:#ebf8ff;border-left:4px solid #3182ce;border-radius:6px;font-size:.9rem;line-height:1.6;display:none}
 .explanation strong{color:#2b6cb0}
+.show-explanation .explanation{display:block}
 #submit-btn{background:#ff9900;color:#fff;border:none;padding:12px 28px;font-size:1rem;font-weight:700;border-radius:8px;cursor:pointer;transition:background .2s}
 #submit-btn:hover{background:#e08600}#submit-btn:disabled{background:#cbd5e0;cursor:not-allowed}
 #reset-btn{background:none;color:#e53e3e;border:2px solid #e53e3e;padding:10px 20px;font-size:.88rem;font-weight:700;border-radius:8px;cursor:pointer;transition:all .2s}
@@ -179,7 +182,7 @@ header h1{font-size:1.1rem;letter-spacing:.4px}header p{margin-top:5px;opacity:.
         <button class="pn-btn" onclick="changePage(-1)" id="btn-prev">← Prev</button>
         <div style="display:flex;gap:8px;align-items:center">
           <button id="reset-btn" onclick="resetExam()">🔄 Reset</button>
-          <button id="submit-btn" onclick="submitExam()">Submit Exam</button>
+          <button id="submit-btn" onclick="submitExam()">Submit Page</button>
         </div>
         <button class="pn-btn" onclick="changePage(1)" id="btn-next">Next →</button>
       </div>
@@ -441,16 +444,16 @@ function switchTab(n,b){document.querySelectorAll('.tab-pane').forEach(p=>p.clas
 function toggleNav(){const nav=document.getElementById('left-nav');nav.classList.toggle('collapsed');}
 
 // ── PAGINATION ──
-const PAGE_SIZE=1;
+const PAGE_SIZE=20;
 const LS_ANSWERS='clf_answers';
 const LS_PAGE='clf_page';
-const LS_SUBMITTED='clf_submitted';
+const LS_SUBMITTED='clf_submitted'; // now stores JSON array of submitted page indices
 
 function saveState(){
   try{
     localStorage.setItem(LS_ANSWERS,JSON.stringify(userAnswers));
     localStorage.setItem(LS_PAGE,currentPage);
-    localStorage.setItem(LS_SUBMITTED,submitted?'1':'0');
+    localStorage.setItem(LS_SUBMITTED,JSON.stringify(submittedPages));
   }catch(e){}
 }
 function loadState(){
@@ -458,8 +461,9 @@ function loadState(){
     const a=localStorage.getItem(LS_ANSWERS);
     if(a){const parsed=JSON.parse(a);if(Array.isArray(parsed)&&parsed.length===questions.length)userAnswers=parsed;}
     const p=localStorage.getItem(LS_PAGE);
-    if(p!==null)currentPage=Math.min(parseInt(p),questions.length-1);
-    submitted=localStorage.getItem(LS_SUBMITTED)==='1';
+    if(p!==null)currentPage=Math.min(parseInt(p),totalPages()-1);
+    const s=localStorage.getItem(LS_SUBMITTED);
+    if(s){const parsed=JSON.parse(s);if(Array.isArray(parsed))submittedPages=new Set(parsed);}
     answered=userAnswers.filter(a=>a!==null).length;
   }catch(e){}
 }
@@ -468,11 +472,15 @@ function clearState(){
 }
 
 let currentPage=0;
-let answered=0,submitted=false;
+let answered=0;
+let submittedPages=new Set(); // pages that have been submitted
 let userAnswers=new Array(questions.length).fill(null);
 loadState();
 
 function totalPages(){return Math.ceil(questions.length/PAGE_SIZE);}
+function pageStart(p){return p*PAGE_SIZE;}
+function pageEnd(p){return Math.min(pageStart(p)+PAGE_SIZE,questions.length);}
+function isPageSubmitted(p){return submittedPages.has(p);}
 
 function buildPageNav(){
   const nav=document.getElementById('page-nav');
@@ -482,14 +490,16 @@ function buildPageNav(){
     const b=document.createElement('button');
     let cls='pn-btn';
     if(i===currentPage) cls+=' active';
-    if(userAnswers[i]!==null) cls+=' answered';
+    // page answered = all questions on that page have been answered
+    const allAnswered=Array.from({length:pageEnd(i)-pageStart(i)},(_,k)=>userAnswers[pageStart(i)+k]).every(a=>a!==null);
+    if(isPageSubmitted(i)) cls+=' submitted-page';
+    else if(allAnswered) cls+=' answered';
     b.className=cls;
     b.textContent=i+1;
     b.id='pnb-'+i;
-    b.onclick=(()=>{const p=i;return()=>goToPage(p);})();
+    b.onclick=(()=>{const pg=i;return()=>goToPage(pg);})();
     nav.appendChild(b);
   }
-  // scroll active button into view inside the panel
   const active=document.getElementById('pnb-'+currentPage);
   if(active) active.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
@@ -507,48 +517,82 @@ function changePage(dir){
 }
 
 function renderPage(){
-  const start=currentPage*PAGE_SIZE;
-  const end=Math.min(start+PAGE_SIZE,questions.length);
+  const start=pageStart(currentPage);
+  const end=pageEnd(currentPage);
   const wrapper=document.getElementById('questions-wrapper');
   wrapper.innerHTML='';
   const tp=totalPages();
-  document.getElementById('page-label').textContent=`Question ${currentPage+1} of ${tp}`;
+  const pageSubmitted=isPageSubmitted(currentPage);
+
+  document.getElementById('page-label').textContent=`Page ${currentPage+1} of ${tp}  (Q${start+1}–${end})`;
   document.getElementById('btn-prev').disabled=currentPage===0;
   document.getElementById('btn-next').disabled=currentPage===tp-1;
+
+  // submit button state
+  const sb=document.getElementById('submit-btn');
+  sb.disabled=pageSubmitted;
+  sb.textContent=pageSubmitted?'✓ Submitted':'Submit Page';
+
   buildPageNav();
 
   for(let idx=start;idx<end;idx++){
     const q=questions[idx];
     const card=document.createElement('div');
-    card.className='question-card';
+    card.className='question-card' + (pageSubmitted ? ' show-explanation' : '');
     const inputType=q.multi?'checkbox':'radio';
-    card.innerHTML=`<div class="q-number">Question ${idx+1} of ${questions.length}${q.multi?' <span style="font-size:.7rem;background:#f6ad55;color:#744210;padding:2px 7px;border-radius:10px;font-weight:700">SELECT TWO</span>':''}</div>
+    card.innerHTML=`<div class="q-number">Question ${idx+1}${q.multi?' <span style="font-size:.7rem;background:#f6ad55;color:#744210;padding:2px 7px;border-radius:10px;font-weight:700">SELECT TWO</span>':''}</div>
       <div class="q-text">${q.q}</div>
       <div class="options" id="opts-${idx}"></div>
-      <div class="explanation" id="exp-${idx}"><strong>Explanation:</strong> ${q.explanation}</div>`;
+      <div class="explanation" id="exp-${idx}"><strong>💡 Explanation:</strong> ${q.explanation}</div>`;
     const od=card.querySelector('#opts-'+idx);
     q.options.forEach((opt,oi)=>{
       const lbl=document.createElement('label');
       lbl.className='opt-label';lbl.id=`opt-${idx}-${oi}`;
       lbl.innerHTML=`<input type="${inputType}" name="q${idx}" value="${oi}"> <span>${String.fromCharCode(65+oi)}) ${opt}</span>`;
       const inp=lbl.querySelector('input');
-      // restore saved answer
       if(userAnswers[idx]!==null){
         if(q.multi&&Array.isArray(userAnswers[idx])){if(userAnswers[idx].includes(oi))inp.checked=true;}
         else if(!q.multi&&userAnswers[idx]===oi)inp.checked=true;
       }
-      inp.addEventListener('change',()=>onAnswer(idx));
+      if(!pageSubmitted) inp.addEventListener('change',()=>onAnswer(idx));
       od.appendChild(lbl);
     });
-    // if submitted, show results
-    if(submitted)applyResultStyles(idx);
     wrapper.appendChild(card);
+    if(pageSubmitted) applyResultStyles(idx);
   }
+
+  // page score summary if already submitted
+  if(pageSubmitted) renderPageScore(currentPage);
+}
+
+function renderPageScore(p){
+  const start=pageStart(p); const end=pageEnd(p);
+  let c=0,i=0,s=0;
+  for(let idx=start;idx<end;idx++){
+    const ua=userAnswers[idx];const q=questions[idx];
+    if(ua===null){s++;continue;}
+    const ans=q.multi?(Array.isArray(q.answer)?q.answer:[q.answer]):[q.answer];
+    const sel=Array.isArray(ua)?ua:[ua];
+    const ok=sel.length===ans.length&&ans.every(a=>sel.includes(a));
+    if(ok)c++;else i++;
+  }
+  const total=end-start;
+  const pct=Math.round(c/total*100);
+  const div=document.createElement('div');
+  div.style.cssText='background:#fff;border-radius:12px;padding:16px 20px;margin-top:16px;display:flex;align-items:center;gap:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);flex-wrap:wrap';
+  div.innerHTML=`<div style="font-weight:700;font-size:1rem;color:#232f3e">Page ${p+1} Results</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <span style="background:#f0fff4;border:2px solid #38a169;border-radius:8px;padding:6px 16px;font-weight:700;color:#276749">✓ ${c} Correct</span>
+      <span style="background:#fff5f5;border:2px solid #e53e3e;border-radius:8px;padding:6px 16px;font-weight:700;color:#c53030">✗ ${i} Wrong</span>
+      <span style="background:#fffaf0;border:2px solid #dd6b20;border-radius:8px;padding:6px 16px;font-weight:700;color:#dd6b20">— ${s} Skipped</span>
+      <span style="background:${pct>=70?'#ebf8ff':'#fff5f5'};border:2px solid ${pct>=70?'#3182ce':'#e53e3e'};border-radius:8px;padding:6px 16px;font-weight:800;color:${pct>=70?'#2b6cb0':'#c53030'}">${pct}%</span>
+    </div>`;
+  document.getElementById('questions-wrapper').prepend(div);
 }
 
 function onAnswer(idx){
-  if(submitted)return;
   const q=questions[idx];
+  if(isPageSubmitted(currentPage))return;
   if(q.multi){
     const checked=[...document.querySelectorAll(`input[name="q${idx}"]:checked`)].map(r=>parseInt(r.value));
     userAnswers[idx]=checked.length?checked:null;
@@ -564,31 +608,19 @@ function onAnswer(idx){
 function updateProgress(){}
 
 function submitExam(){
-  if(submitted)return;
-  submitted=true;
-  document.getElementById('submit-btn').disabled=true;
-  let correct=0,incorrect=0,skipped=0;
-  questions.forEach((_,idx)=>{
-    const ua=userAnswers[idx];
-    const q=questions[idx];
-    if(ua===null){skipped++;return;}
-    let isCorrect;
-    if(q.multi){
-      const ans=Array.isArray(q.answer)?q.answer:[q.answer];
-      isCorrect=Array.isArray(ua)&&ua.length===ans.length&&ans.every(a=>ua.includes(a));
-    }else{isCorrect=ua===q.answer;}
-    if(isCorrect)correct++;else incorrect++;
-  });
-  renderPage();
-  showResults(correct,incorrect,skipped);
+  if(isPageSubmitted(currentPage))return;
+  submittedPages.add(currentPage);
   saveState();
+  renderPage();
+  // scroll to score summary
+  document.getElementById('exam-container').scrollIntoView({behavior:'smooth'});
 }
 
 function applyResultStyles(idx){
   const q=questions[idx];
   const ua=userAnswers[idx];
   const expEl=document.getElementById(`exp-${idx}`);
-  if(expEl)expEl.style.display='block';
+  if(expEl){ expEl.style.display='block'; expEl.style.setProperty('display','block','important'); }
   const radios=document.querySelectorAll(`input[name="q${idx}"]`);
   radios.forEach(r=>r.disabled=true);
   const correctAnswers=q.multi?(Array.isArray(q.answer)?q.answer:[q.answer]):[q.answer];
@@ -623,7 +655,7 @@ function showResults(c,inc,sk){
 }
 
 function retryExam(){
-  submitted=false;answered=0;currentPage=0;
+  submittedPages=new Set();answered=0;currentPage=0;
   userAnswers=new Array(questions.length).fill(null);
   clearState();
   document.getElementById('results-banner').style.display='none';
@@ -640,7 +672,7 @@ function closeConfirm(){
 }
 function doReset(){
   closeConfirm();
-  submitted=false;answered=0;currentPage=0;
+  submittedPages=new Set();answered=0;currentPage=0;
   userAnswers=new Array(questions.length).fill(null);
   clearState();
   document.getElementById('results-banner').style.display='none';
@@ -695,20 +727,6 @@ function filterServices(){
 
 // ── INIT ──
 renderPage();
-if(submitted){
-  // restore post-submit state
-  document.getElementById('submit-btn').disabled=true;
-  let correct=0,incorrect=0,skipped=0;
-  questions.forEach((_,idx)=>{
-    const ua=userAnswers[idx];const q=questions[idx];
-    if(ua===null){skipped++;return;}
-    let ok;
-    if(q.multi){const ans=Array.isArray(q.answer)?q.answer:[q.answer];ok=Array.isArray(ua)&&ua.length===ans.length&&ans.every(a=>ua.includes(a));}
-    else{ok=ua===q.answer;}
-    if(ok)correct++;else incorrect++;
-  });
-  showResults(correct,incorrect,skipped);
-}
 buildServices();
 </script>
 <!-- confirm modal -->
